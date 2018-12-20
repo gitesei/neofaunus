@@ -414,57 +414,6 @@ namespace Faunus {
                 }
             };
 
-        template<class Tparticle>
-            class DesernoMembraneAA : public PairPotentialBase {
-
-                WeeksChandlerAndersen<Tparticle> wca;
-                CosAttract cos2;
-                Polarizability<Tparticle> polar;
-                int tail;
-                int aa;
-
-                public:
-                DesernoMembraneAA(const std::string &name="dmembraneAA") {
-                    PairPotentialBase::name=name;
-                    PairPotentialBase::name.clear();
-                }
-
-                inline void from_json(const json &j) override {
-                    wca = j;
-                    cos2 = j;
-                    polar = j;
-                    auto it = findName(atoms<Tparticle>, "TL");
-                    if ( it!=atoms<Tparticle>.end() )
-                        tail = it->id();
-                    else
-                        throw std::runtime_error("Atom type 'TL' is not defined.");
-                    it = findName(atoms<Tparticle>, "AA");
-                    if ( it!=atoms<Tparticle>.end() )
-                        aa = it->id();
-                    else
-                        throw std::runtime_error("Atom type 'AA' is not defined.");
-
-                }
-                void to_json(json &j) const override {
-                    json _j;
-                    wca.to_json(j);
-                    cos2.to_json(_j);
-                    j = merge(j,_j);
-                    polar.to_json(_j);
-                    j = merge(j,_j);
-                }
-
-                double operator() (const Tparticle &a, const Tparticle &b, const Point &r) const {
-                    double u=wca(a,b,r);
-                    if (a.id==tail and b.id==tail)
-                        u+=cos2(a,b,r);
-                    if (a.id==aa or b.id==aa) {
-                        u+=polar(a,b,r);
-                    }
-                    return u;
-                }
-            };
-
         /**
          * @brief Finite Extensible Nonlinear Elastic (FENE) potential
          *
@@ -699,6 +648,62 @@ namespace Faunus {
                 _roundjson(j, 5);
             }
         };
+
+        template<class Tparticle>
+            class DesernoMembraneAA : public PairPotentialBase {
+
+                WeeksChandlerAndersen<Tparticle> wca;
+                CosAttract cos2;
+                Polarizability<Tparticle> polar;
+                CoulombGalore yukawa;
+                int tail;
+                int aa;
+
+                public:
+                DesernoMembraneAA(const std::string &name="dmembraneAA") {
+                    PairPotentialBase::name=name;
+                    PairPotentialBase::name.clear();
+                }
+
+                inline void from_json(const json &j) override {
+                    wca = j;
+                    cos2 = j;
+                    polar = j;
+                    yukawa = j;
+                    auto it = findName(atoms<Tparticle>, "TL");
+                    if ( it!=atoms<Tparticle>.end() )
+                        tail = it->id();
+                    else
+                        throw std::runtime_error("Atom type 'TL' is not defined.");
+                    it = findName(atoms<Tparticle>, "AA");
+                    if ( it!=atoms<Tparticle>.end() )
+                        aa = it->id();
+                    else
+                        throw std::runtime_error("Atom type 'AA' is not defined.");
+
+                }
+                void to_json(json &j) const override {
+                    json _j;
+                    wca.to_json(j);
+                    cos2.to_json(_j);
+                    j = merge(j,_j);
+                    polar.to_json(_j);
+                    j = merge(j,_j);
+                    yukawa.to_json(_j);
+                    j = merge(j,_j);
+                }
+
+                double operator() (const Tparticle &a, const Tparticle &b, const Point &r) const {
+                    double u=wca(a,b,r);
+                    if (a.id==tail and b.id==tail)
+                        u+=cos2(a,b,r);
+                    if (a.id==aa or b.id==aa) 
+                        u+=polar(a,b,r);
+                    if (a.id==aa and b.id==aa) 
+                        u+=yukawa(a,b,r);
+                    return u;
+                }
+            };
 
         /**
          * @brief Arbitrary potentials for specific atom types

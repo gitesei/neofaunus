@@ -107,6 +107,40 @@ namespace Faunus {
         /**
          * @brief Reaction coordinate: molecule-molecule mass-center separation
          */
+        struct AtomAtomSeparation : public ReactionCoordinateBase {
+            Eigen::Vector3i dir={1,1,1};
+            std::vector<size_t> index;
+            std::vector<std::string> type;
+            template<class Tspace>
+                AtomAtomSeparation(const json &j, Tspace &spc) {
+                    typedef typename Tspace::Tparticle Tparticle;
+                    name = "atomatom";
+                    from_json(j, *this);
+                    dir = j.value("dir", dir);
+                    index = j.at("index").get<decltype(index)>();
+                    f = [&spc, dir=dir, i=index[0], j=index[1]]() {
+                      auto &pos1 = spc.p.at(i).pos;
+                      auto &pos2 = spc.p.at(j).pos;
+                      return spc.geo.vdist(pos1, pos2).cwiseProduct(dir.cast<double>()).norm(); 
+                    };
+                }
+
+            double normalize(double coord) const override {
+                int dim=dir.sum();
+                if (dim==2) return 1/(2*pc::pi*coord);
+                if (dim==3) return 1/(4*pc::pi*coord*coord);
+                return 1.0;
+            } // normalize by volume element
+
+            void _to_json(json &j) const override {
+                j["dir"] = dir;
+                j["index"] = index;
+            }
+        };
+
+        /**
+         * @brief Reaction coordinate: molecule-molecule mass-center separation
+         */
         struct MassCenterSeparation : public ReactionCoordinateBase {
             Eigen::Vector3i dir={1,1,1};
             std::vector<size_t> index;

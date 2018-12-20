@@ -990,6 +990,8 @@ namespace Faunus {
                                             rc = std::make_shared<AtomProperty>(it.value(), spc);
                                         if (it.key()=="system")
                                             rc = std::make_shared<SystemProperty>(it.value(), spc);
+                                        if (it.key()=="atomatom")
+                                            rc = std::make_shared<AtomAtomSeparation>(it.value(), spc);
                                         if (it.key()=="cmcm")
                                             rc = std::make_shared<MassCenterSeparation>(it.value(), spc);
                                         if (it.key()=="angle")
