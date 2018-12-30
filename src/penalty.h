@@ -121,6 +121,8 @@ namespace Faunus {
                     f = [&spc, dir=dir, i=index[0], j=index[1]]() {
                       auto &pos1 = spc.p.at(i).pos;
                       auto &pos2 = spc.p.at(j).pos;
+                      // cout << spc.p.at(i).mw << " " << spc.p.at(j).mw << endl;
+                      // cout << spc.p.at(i).id << " " << spc.p.at(j).id << endl;
                       return spc.geo.vdist(pos1, pos2).cwiseProduct(dir.cast<double>()).norm(); 
                     };
                 }
