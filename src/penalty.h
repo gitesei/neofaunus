@@ -145,7 +145,7 @@ namespace Faunus {
          */
         struct MassCenterSeparation : public ReactionCoordinateBase {
             Eigen::Vector3i dir={1,1,1};
-            std::vector<size_t> index;
+            std::vector<size_t> ndx;
             std::vector<std::string> type;
             template<class Tspace>
                 MassCenterSeparation(const json &j, Tspace &spc) {
@@ -153,13 +153,14 @@ namespace Faunus {
                     name = "cmcm";
                     from_json(j, *this);
                     dir = j.value("dir", dir);
-                    index = j.at("index").get<decltype(index)>();
+                    ndx = j.at("index").get<decltype(ndx)>();
                     type = j.at("type").get<decltype(type)>();
-                    if (index.size()==2) {
-                        f = [&spc, dir=dir, i=index[0], j=index[1]]() {
-                            auto &cm1 = spc.groups[i].cm;
-                            auto &cm2 = spc.groups[j].cm;
-                            return spc.geo.vdist(cm1, cm2).cwiseProduct(dir.cast<double>()).norm(); 
+                    if (ndx.size()==4) {
+                        f = [&spc, dir=dir, i=ndx[0], j=ndx[1], k=ndx[2], l=ndx[3]]() {
+                            Group<Tparticle> g(spc.p.begin(), spc.p.end());
+                            auto cm1 = Geometry::massCenter(g.begin()+i, g.begin()+j, spc.geo.boundaryFunc);
+                            auto cm2 = Geometry::massCenter(g.begin()+k, g.begin()+l, spc.geo.boundaryFunc);
+                            return spc.geo.vdist(cm1, cm2).cwiseProduct(dir.cast<double>()).sum(); 
                         };
                     }
                     else if (type.size()==2) {
@@ -185,7 +186,7 @@ namespace Faunus {
 
             void _to_json(json &j) const override {
                 j["dir"] = dir;
-                j["index"] = index;
+                j["index"] = ndx;
                 j["type"] = type;
             }
         };
@@ -234,11 +235,11 @@ namespace Faunus {
             using doctest::Approx;
             typedef Space<Geometry::Cuboid, Particle<>> Tspace;
             Tspace spc;
-            MassCenterSeparation c( R"({"dir":[1,1,0], "index":[7,8], "type":[] })"_json, spc);
+            MassCenterSeparation c( R"({"dir":[1,1,0], "index":[0,8,9,18], "type":[] })"_json, spc);
             CHECK( c.dir.x() == 1 );
             CHECK( c.dir.y() == 1 );
             CHECK( c.dir.z() == 0 );
-            CHECK( c.index == decltype(c.index)({7,8}) );
+            CHECK( c.ndx == decltype(c.ndx)({0,8,9,18}) );
         }
 #endif
 
