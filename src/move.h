@@ -415,6 +415,89 @@ namespace Faunus {
         }
 #endif
 
+        /**
+         * @brief QuadrantJump translates a molecule to another quadrant
+         */
+        template<typename Tspace>
+            class QuadrantJump : public Movebase {
+                private:
+                    typedef typename Tspace::Tpvec Tpvec;
+                    Tspace& spc; // Space to operate on
+                    int molid=-1;
+                    Point dir={1,1,1};
+                    double _sqd; // squared displacement
+                    Average<double> msqd; // mean squared displacement
+
+                    void _to_json(json &j) const override {
+                        j = {
+                            {"dir", dir}, 
+                            {"molid", molid},
+                            {u8::rootof + u8::bracket("r" + u8::squared), std::sqrt(msqd.avg())},
+                            {"molecule", molecules<Tpvec>[molid].name}
+                        };
+                        _roundjson(j,3);
+                    }
+
+                    void _from_json(const json &j) override {
+                        assert(!molecules<Tpvec>.empty());
+                        try {
+                            std::string molname = j.at("molecule");
+                            auto it = findName(molecules<Tpvec>, molname);
+                            if (it == molecules<Tpvec>.end())
+                                throw std::runtime_error("unknown molecule '" + molname + "'");
+                            molid = it->id();
+                            dir = j.value("dir", Point(1,1,1));
+                            if (repeat<0) {
+                                auto v = spc.findMolecules(molid);
+                                repeat = std::distance(v.begin(), v.end());
+                            }
+                        }
+                        catch (std::exception &e) {
+                            throw std::runtime_error(name+": " + e.what());
+                        }
+                    } //!< Configure via json object
+
+
+                    void _move(Change &change) override {
+                        assert(molid>=0);
+                        assert(!spc.groups.empty());
+                        assert(spc.geo.getVolume()>0);
+
+                        // pick random group from the system matching molecule type
+                        // TODO: This can be slow -- implement look-up-table in Space
+                        auto mollist = spc.findMolecules( molid, Tspace::ACTIVE ); // list of molecules w. 'molid'
+                        if (size(mollist)>0) {
+                            auto it = slump.sample( mollist.begin(), mollist.end() );
+                            if (not it->empty()) {
+                                assert(it->id==molid);
+
+                                Point oldcm = it->cm;
+                                it->translate( -2*oldcm.cwiseProduct(dir.cast<double>()), spc.geo.boundaryFunc );
+                                _sqd = spc.geo.sqdist(oldcm, it->cm); // squared displacement
+
+                                Change::data d;
+                                d.index = Faunus::distance( spc.groups.begin(), it ); // integer *index* of moved group
+                                d.all = true; // *all* atoms in group were moved
+                                change.groups.push_back( d ); // add to list of moved groups
+
+                                assert( spc.geo.sqdist( it->cm,
+                                            Geometry::massCenter(it->begin(),it->end(),spc.geo.boundaryFunc,-it->cm) ) < 1e-9 );
+                            }
+                        }
+                        else std::cerr << name << ": no molecules found" << std::endl;
+                    }
+
+                    void _accept(Change &change) override { msqd += _sqd; }
+                    void _reject(Change &change) override { msqd += 0; }
+
+
+                public:
+                    QuadrantJump(Tspace &spc) : spc(spc) {
+                        name = "quadrantjump";
+                        repeat = -1; // meaning repeat N times
+                    }
+            };
+
         template<typename Tspace>
             class VolumeMove : public Movebase {
                 private:
@@ -1069,6 +1152,7 @@ namespace Faunus {
                                     if (it.key()=="temper") this->template push_back<Move::ParallelTempering<Tspace>>(spc, mpi);
 #endif
                                     if (it.key()=="moltransrot") this->template push_back<Move::TranslateRotate<Tspace>>(spc);
+                                    if (it.key()=="quadrantjump") this->template push_back<Move::QuadrantJump<Tspace>>(spc);
                                     if (it.key()=="transrot") this->template push_back<Move::AtomicTranslateRotate<Tspace>>(spc);
                                     if (it.key()=="pivot") this->template push_back<Move::Pivot<Tspace>>(spc);
                                     if (it.key()=="volume") this->template push_back<Move::VolumeMove<Tspace>>(spc);

@@ -1321,6 +1321,36 @@ namespace Faunus {
 #else
                                         push_back<Energy::Penalty<Tspace>>(it.value(), spc);
 #endif
+                                    if (it.key()=="penalty3")
+#ifdef ENABLE_MPI
+                                        push_back<Energy::PenaltyMPI<Tspace>>(it.value(), spc);
+#else
+                                        push_back<Energy::Penalty<Tspace>>(it.value(), spc);
+#endif
+                                    if (it.key()=="penalty4")
+#ifdef ENABLE_MPI
+                                        push_back<Energy::PenaltyMPI<Tspace>>(it.value(), spc);
+#else
+                                        push_back<Energy::Penalty<Tspace>>(it.value(), spc);
+#endif
+                                    if (it.key()=="penalty5")
+#ifdef ENABLE_MPI
+                                        push_back<Energy::PenaltyMPI<Tspace>>(it.value(), spc);
+#else
+                                        push_back<Energy::Penalty<Tspace>>(it.value(), spc);
+#endif
+                                    if (it.key()=="penalty6")
+#ifdef ENABLE_MPI
+                                        push_back<Energy::PenaltyMPI<Tspace>>(it.value(), spc);
+#else
+                                        push_back<Energy::Penalty<Tspace>>(it.value(), spc);
+#endif
+                                    if (it.key()=="penalty7")
+#ifdef ENABLE_MPI
+                                        push_back<Energy::PenaltyMPI<Tspace>>(it.value(), spc);
+#else
+                                        push_back<Energy::Penalty<Tspace>>(it.value(), spc);
+#endif
 
 #ifdef ENABLE_POWERSASA
                                     if (it.key()=="sasa")

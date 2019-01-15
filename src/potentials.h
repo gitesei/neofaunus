@@ -655,7 +655,7 @@ namespace Faunus {
                 WeeksChandlerAndersen<Tparticle> wca;
                 CosAttract cos2;
                 Polarizability<Tparticle> polar;
-                CoulombGalore yukawa;
+                //CoulombGalore yukawa;
                 int tail;
                 int aa;
 
@@ -669,7 +669,7 @@ namespace Faunus {
                     wca = j;
                     cos2 = j;
                     polar = j;
-                    yukawa = j;
+                    //yukawa = j;
                     auto it = findName(atoms<Tparticle>, "TL");
                     if ( it!=atoms<Tparticle>.end() )
                         tail = it->id();
@@ -680,8 +680,8 @@ namespace Faunus {
                         aa = it->id();
                     else
                         throw std::runtime_error("Atom type 'AA' is not defined.");
-
                 }
+
                 void to_json(json &j) const override {
                     json _j;
                     wca.to_json(j);
@@ -689,18 +689,18 @@ namespace Faunus {
                     j = merge(j,_j);
                     polar.to_json(_j);
                     j = merge(j,_j);
-                    yukawa.to_json(_j);
-                    j = merge(j,_j);
+                    //yukawa.to_json(_j);
+                    //j = merge(j,_j);
                 }
 
                 double operator() (const Tparticle &a, const Tparticle &b, const Point &r) const {
                     double u=wca(a,b,r);
-                    if (a.id==tail and b.id==tail)
+                    if (a.id == tail and b.id == tail)
                         u+=cos2(a,b,r);
-                    if (a.id==aa or b.id==aa) 
+                    if (a.id == aa or b.id == aa) 
                         u+=polar(a,b,r);
-                    if (a.id==aa and b.id==aa) 
-                        u+=yukawa(a,b,r);
+                    //if (a.id == aa and b.id == aa)
+                    //    u+=yukawa(a,b,r);
                     return u;
                 }
             };
