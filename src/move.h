@@ -416,15 +416,19 @@ namespace Faunus {
 #endif
 
         /**
-         * @brief QuadrantJump translates a molecule to another quadrant
+         * @brief QuadrantJump translates a molecule to another quadrant 
+         * considering as the origin the center of the box or the center of mass of a range of atomic indexes 
+         * specified by "index": [start:stop].
          */
         template<typename Tspace>
             class QuadrantJump : public Movebase {
                 private:
                     typedef typename Tspace::Tpvec Tpvec;
+                    typedef typename Tspace::Tparticle Tparticle;
                     Tspace& spc; // Space to operate on
                     int molid=-1;
                     Point dir={1,1,1};
+                    std::vector<size_t> index;
                     double _sqd; // squared displacement
                     Average<double> msqd; // mean squared displacement
 
@@ -447,6 +451,7 @@ namespace Faunus {
                                 throw std::runtime_error("unknown molecule '" + molname + "'");
                             molid = it->id();
                             dir = j.value("dir", Point(1,1,1));
+                            index = j.value("index", decltype(index)());
                             if (repeat<0) {
                                 auto v = spc.findMolecules(molid);
                                 repeat = std::distance(v.begin(), v.end());
@@ -470,11 +475,15 @@ namespace Faunus {
                             auto it = slump.sample( mollist.begin(), mollist.end() );
                             if (not it->empty()) {
                                 assert(it->id==molid);
-
                                 Point oldcm = it->cm;
-                                it->translate( -2*oldcm.cwiseProduct(dir.cast<double>()), spc.geo.boundaryFunc );
+                                if (index.size()==2) {
+                                    Group<Tparticle> g(spc.p.begin(), spc.p.end());
+                                    auto cm_O = Geometry::massCenter(g.begin()+index[0], g.begin()+index[1], spc.geo.boundaryFunc );
+                                    it->translate( -2*spc.geo.vdist(oldcm, cm_O).cwiseProduct(dir.cast<double>()), spc.geo.boundaryFunc );
+                                } else {
+                                    it->translate( -2*oldcm.cwiseProduct(dir.cast<double>()), spc.geo.boundaryFunc );
+                                }
                                 _sqd = spc.geo.sqdist(oldcm, it->cm); // squared displacement
-
                                 Change::data d;
                                 d.index = Faunus::distance( spc.groups.begin(), it ); // integer *index* of moved group
                                 d.all = true; // *all* atoms in group were moved
